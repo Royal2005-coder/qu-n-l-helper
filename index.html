@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Quản lý Người Giúp Việc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chosen Palette: Cool Blues & Grays -->
+    <!-- Application Structure Plan: Ứng dụng được cấu trúc như một dashboard quản trị hiện đại. Sử dụng thanh điều hướng bên trái (sidebar) để chuyển đổi giữa các chức năng chính: Tổng quan, Lịch làm việc, Đơn hàng, Nhân viên, Dịch vụ, và Kỹ năng. Cách tiếp cận này giúp người dùng dễ dàng truy cập vào các phần khác nhau của hệ thống, cung cấp một luồng công việc rõ ràng và tập trung. Trang Tổng quan sẽ hiển thị các chỉ số và biểu đồ quan trọng, giúp người quản lý nắm bắt nhanh tình hình hoạt động. -->
+    <!-- Visualization & Content Choices: 
+        - Tổng quan -> Goal: Inform -> Viz/Presentation: Thẻ KPI (số liệu chính) và biểu đồ (Doanh thu, Dịch vụ phổ biến, Trạng thái đơn hàng) -> Interaction: Hover để xem chi tiết trên biểu đồ -> Justification: Cung cấp cái nhìn tổng thể, nhanh chóng về hiệu suất kinh doanh -> Library/Method: HTML/Tailwind cho thẻ, Chart.js cho biểu đồ.
+        - Lịch làm việc -> Goal: Organize/Inform -> Viz/Presentation: Lịch trình hàng ngày trên Canvas -> Interaction: Chọn ngày, lọc theo nhân viên -> Justification: Trực quan hóa lịch trình, giúp dễ dàng phân công và theo dõi -> Library/Method: HTML Canvas, JS.
+        - Đơn hàng, Nhân viên, Kỹ năng -> Goal: Organize/Compare -> Viz/Presentation: Bảng dữ liệu tương tác -> Interaction: Tìm kiếm, lọc -> Justification: Cho phép quản lý chi tiết và tìm kiếm thông tin hiệu quả -> Library/Method: HTML/Tailwind, JS.
+        - Dịch vụ -> Goal: Inform -> Viz/Presentation: Lưới thẻ (Grid of cards) -> Interaction: Hover -> Justification: Hiển thị dịch vụ một cách trực quan và hấp dẫn hơn bảng truyền thống -> Library/Method: HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+        .kpi-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar bg-white text-gray-800 w-64 space-y-2 py-4 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 shadow-lg z-30">
+            <a href="#" class="flex items-center space-x-2 px-4 py-2">
+                <i class="fas fa-concierge-bell text-2xl text-blue-600"></i>
+                <span class="text-2xl font-bold text-gray-800">MyMaid</span>
+            </a>
+            
+            <nav class="mt-8">
+                <a href="#tongquan" class="nav-link active flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-tachometer-alt w-6"></i>
+                    <span>Tổng quan</span>
+                </a>
+                <a href="#lichlamviec" class="nav-link flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-calendar-alt w-6"></i>
+                    <span>Lịch Làm Việc</span>
+                </a>
+                <a href="#donhang" class="nav-link flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-file-invoice-dollar w-6"></i>
+                    <span>Đơn Hàng</span>
+                </a>
+                <a href="#nhanvien" class="nav-link flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-users w-6"></i>
+                    <span>Nhân Viên</span>
+                </a>
+                <a href="#dichvu" class="nav-link flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-hand-sparkles w-6"></i>
+                    <span>Dịch Vụ</span>
+                </a>
+                <a href="#kynang" class="nav-link flex items-center space-x-3 py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-600">
+                    <i class="fas fa-star w-6"></i>
+                    <span>Kỹ Năng</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div id="main-content" class="main-content flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <button id="menu-button" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 id="page-title" class="text-2xl font-semibold text-gray-800">Tổng quan</h1>
+                <div class="flex items-center space-x-4">
+                     <i class="fas fa-bell text-gray-600"></i>
+                     <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">A</div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6 lg:p-8">
+                <!-- Pages container -->
+                <div id="pages">
+                    <!-- Tổng quan Page -->
+                    <div id="tongquan" class="page active">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="kpi-card bg-white p-6 rounded-lg shadow-sm flex items-center space-x-4">
+                                <div class="bg-blue-100 p-3 rounded-full"><i class="fas fa-file-invoice-dollar text-xl text-blue-600"></i></div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Tổng Đơn Hàng</p>
+                                    <p id="total-orders" class="text-2xl font-bold"></p>
+                                </div>
+                            </div>
+                             <div class="kpi-card bg-white p-6 rounded-lg shadow-sm flex items-center space-x-4">
+                                <div class="bg-green-100 p-3 rounded-full"><i class="fas fa-dollar-sign text-xl text-green-600"></i></div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Tổng Doanh Thu</p>
+                                    <p id="total-revenue" class="text-2xl font-bold"></p>
+                                </div>
+                            </div>
+                            <div class="kpi-card bg-white p-6 rounded-lg shadow-sm flex items-center space-x-4">
+                                <div class="bg-yellow-100 p-3 rounded-full"><i class="fas fa-users text-xl text-yellow-600"></i></div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Nhân Viên Hoạt Động</p>
+                                    <p id="active-staff" class="text-2xl font-bold"></p>
+                                </div>
+                            </div>
+                           <div class="kpi-card bg-white p-6 rounded-lg shadow-sm flex items-center space-x-4">
+                                <div class="bg-red-100 p-3 rounded-full"><i class="fas fa-clock text-xl text-red-600"></i></div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Đơn Hàng Chờ</p>
+                                    <p id="pending-orders" class="text-2xl font-bold"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                            <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-sm">
+                                <h3 class="font-semibold mb-4">Doanh thu theo Tháng (2025)</h3>
+                                <div class="chart-container">
+                                    <canvas id="revenueChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+                                <h3 class="font-semibold mb-4">Dịch vụ Phổ biến</h3>
+                                <div class="chart-container">
+                                    <canvas id="servicesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lịch làm việc Page -->
+                    <div id="lichlamviec" class="page hidden">
+                         <div class="bg-white p-6 rounded-lg shadow-sm">
+                            <div class="flex flex-wrap items-center justify-between mb-4 gap-4">
+                                <h2 class="text-xl font-semibold">Lịch Trình Hàng Ngày</h2>
+                                <div class="flex items-center gap-4">
+                                    <select id="employee-filter" class="w-48 p-2 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="all">Tất cả nhân viên</option>
+                                    </select>
+                                    <input type="date" id="date-picker" class="p-2 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div class="w-full h-96 bg-gray-50 rounded-lg mb-4">
+                                 <canvas id="scheduleCanvas"></canvas>
+                            </div>
+                            <div class="flex justify-center space-x-4 mb-4">
+                                <div class="flex items-center"><span class="w-4 h-4 bg-green-400 rounded-sm mr-2"></span>Trống</div>
+                                <div class="flex items-center"><span class="w-4 h-4 bg-blue-400 rounded-sm mr-2"></span>Đã Đặt</div>
+                                <div class="flex items-center"><span class="w-4 h-4 bg-red-400 rounded-sm mr-2"></span>Đã Hủy</div>
+                            </div>
+                            <div id="schedule-details">
+                                <h3 class="text-lg font-semibold mb-2">Chi tiết ca làm việc</h3>
+                                <ul id="schedule-list" class="space-y-2"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Đơn hàng Page -->
+                    <div id="donhang" class="page hidden">
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                           <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold">Quản lý Đơn Hàng</h2>
+                                <div class="relative">
+                                    <input type="text" id="order-search" placeholder="Tìm kiếm đơn hàng..." class="pl-10 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                           </div>
+                           <div class="table-responsive">
+                               <table class="w-full text-sm text-left text-gray-500">
+                                   <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                       <tr>
+                                           <th scope="col" class="px-6 py-3">Mã ĐH</th>
+                                           <th scope="col" class="px-6 py-3">Khách Hàng</th>
+                                           <th scope="col" class="px-6 py-3">Nhân Viên</th>
+                                           <th scope="col" class="px-6 py-3">Dịch Vụ</th>
+                                           <th scope="col" class="px-6 py-3">Ngày Đặt</th>
+                                           <th scope="col" class="px-6 py-3">Tổng Tiền</th>
+                                           <th scope="col" class="px-6 py-3">Trạng Thái</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody id="orders-table-body">
+                                   </tbody>
+                               </table>
+                           </div>
+                        </div>
+                    </div>
+
+                    <!-- Nhân viên Page -->
+                    <div id="nhanvien" class="page hidden">
+                       <div class="bg-white p-6 rounded-lg shadow-sm">
+                           <h2 class="text-xl font-semibold mb-4">Danh sách Nhân Viên</h2>
+                           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="staff-list">
+                               <!-- Staff cards will be injected here -->
+                           </div>
+                        </div>
+                    </div>
+
+                    <!-- Dịch vụ Page -->
+                    <div id="dichvu" class="page hidden">
+                        <div class="bg-white p-6 rounded-lg shadow-sm">
+                           <h2 class="text-xl font-semibold mb-4">Danh mục Dịch Vụ</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="services-list">
+                                <!-- Service cards will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kỹ năng Page -->
+                    <div id="kynang" class="page hidden">
+                         <div class="bg-white p-6 rounded-lg shadow-sm">
+                           <h2 class="text-xl font-semibold mb-4">Danh sách Kỹ Năng</h2>
+                           <div class="table-responsive">
+                               <table class="w-full text-sm text-left text-gray-500">
+                                   <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                       <tr>
+                                           <th scope="col" class="px-6 py-3">Mã Kỹ Năng</th>
+                                           <th scope="col" class="px-6 py-3">Tên Kỹ Năng</th>
+                                           <th scope="col" class="px-6 py-3">Mô Tả</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody id="skills-table-body">
+                                   </tbody>
+                               </table>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
